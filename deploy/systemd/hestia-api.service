@@ -1,0 +1,35 @@
+# Hestia API + dashboard.
+# Listens on loopback only; Cloudflare Tunnel + Authentik sit in front.
+# Install to /etc/systemd/system/hestia-api.service (the installer does this).
+
+[Unit]
+Description=Hestia API + dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=hestia
+Group=hestia
+WorkingDirectory=/opt/hestia
+EnvironmentFile=/etc/hestia/hestia.env
+ExecStart=/opt/hestia/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=3
+
+# --- hardening (least privilege; this process only needs its data dir) ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadWritePaths=/var/lib/hestia
+# everything else is read-only / inaccessible
+
+[Install]
+WantedBy=multi-user.target

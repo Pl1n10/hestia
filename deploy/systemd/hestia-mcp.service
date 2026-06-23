@@ -1,0 +1,40 @@
+# Hestia MCP server (agent surface for Hermes).
+# Port 8766 to avoid colliding with devbox-bridge (8765). Loopback only;
+# exposed via Cloudflare Tunnel as its OWN connector, with its OWN bearer token,
+# separate from devbox-bridge's privileged surface.
+# Install to /etc/systemd/system/hestia-mcp.service (the installer does this).
+
+[Unit]
+Description=Hestia MCP server (agent surface)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=hestia
+Group=hestia
+WorkingDirectory=/opt/hestia
+EnvironmentFile=/etc/hestia/hestia.env
+# Force the HTTP transport + port here so the unit is self-contained.
+Environment=HESTIA_MCP_TRANSPORT=streamable-http
+Environment=HESTIA_MCP_HOST=127.0.0.1
+Environment=HESTIA_MCP_PORT=8766
+ExecStart=/opt/hestia/.venv/bin/python -m app.mcp.server
+Restart=on-failure
+RestartSec=3
+
+# --- hardening ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadWritePaths=/var/lib/hestia
+
+[Install]
+WantedBy=multi-user.target

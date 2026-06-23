@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hestia</title>
+<style>
+  :root {
+    --bg: #17120e;
+    --surface: #1f1812;
+    --surface-2: #281f17;
+    --line: #38291f;
+    --text: #f2e9dd;
+    --muted: #a8967f;
+    --faint: #6f6051;
+    --ember: #e8743b;
+    --ember-soft: #f0966a;
+    --info: #6fa8c7;
+    --warn: #e0a93b;
+    --danger: #d5604a;
+    --ok: #7faf6f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    /* a faint hearth glow banked in the lower-centre of the page */
+    background-image: radial-gradient(120% 80% at 50% 118%, rgba(232, 116, 59, 0.10), transparent 60%);
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 20px 80px; }
+
+  /* ---- top bar ---- */
+  header.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  /* the hearth line: a thin ember gradient under the bar */
+  header.bar::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ember) 30%, var(--ember-soft) 50%, var(--ember) 70%, transparent);
+    opacity: 0.7;
+    filter: blur(0.3px);
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand .word {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .brand .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 10px 1px rgba(232, 116, 59, 0.8);
+    display: inline-block;
+    align-self: center;
+    animation: ember 3.6s ease-in-out infinite;
+  }
+  .brand .sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--faint);
+  }
+
+  @keyframes ember {
+    0%, 100% { opacity: 0.65; box-shadow: 0 0 8px 1px rgba(232,116,59,0.55); }
+    50%      { opacity: 1;    box-shadow: 0 0 14px 2px rgba(232,116,59,0.95); }
+  }
+
+  .who { text-align: right; line-height: 1.35; }
+  .who .name { font-weight: 600; font-size: 14px; }
+  .who .meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge.agent { color: var(--ember-soft); border-color: rgba(232,116,59,0.4); }
+
+  /* ---- grid ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+    margin-top: 26px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise 0.5s ease forwards;
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .card .eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+  }
+  .card .eyebrow .ico { font-size: 15px; }
+
+  .card .headline {
+    margin: 12px 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+  .card.err { border-color: rgba(213, 96, 74, 0.5); }
+  .card.err .headline { color: var(--danger); font-size: 15px; font-weight: 500; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0 4px; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    display: flex; gap: 6px; align-items: baseline;
+  }
+  .chip .v { color: var(--text); font-weight: 600; }
+  .chip .l { color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; font-size: 9.5px; }
+
+  .items { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .items li { display: flex; align-items: flex-start; gap: 9px; }
+  .sev {
+    width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex: none;
+    background: var(--muted);
+  }
+  .sev.info { background: var(--info); }
+  .sev.warning { background: var(--warn); box-shadow: 0 0 6px rgba(224,169,59,0.5); }
+  .sev.danger { background: var(--danger); box-shadow: 0 0 6px rgba(213,96,74,0.6); }
+  .it-body { flex: 1; min-width: 0; }
+  .it-title { font-size: 13.5px; }
+  .it-sub { font-size: 12px; color: var(--muted); }
+  .it-when {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--faint);
+    white-space: nowrap;
+    padding-top: 1px;
+  }
+
+  .empty { color: var(--faint); font-size: 13px; font-style: italic; margin-top: 8px; }
+
+  /* ---- integrations strip ---- */
+  .integ-wrap { margin-top: 34px; }
+  .integ-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--faint);
+    margin-bottom: 12px;
+  }
+  .integ { display: flex; flex-wrap: wrap; gap: 10px; }
+  .pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 13px 7px 11px;
+    font-size: 12.5px;
+  }
+  .pill .pdot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .pill.on  .pdot { background: var(--ok); box-shadow: 0 0 7px rgba(127,175,111,0.6); }
+  .pill .pstate {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  /* ---- states ---- */
+  .notice {
+    margin-top: 40px;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .notice b { color: var(--text); }
+  .notice code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--surface-2); padding: 1px 6px; border-radius: 5px; color: var(--ember-soft);
+  }
+
+  footer.feet {
+    margin-top: 40px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+
+  a { color: var(--ember-soft); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  :focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; border-radius: 4px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brand .dot { animation: none; }
+    .card { animation: none; opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="bar">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <span class="word">hestia</span>
+        <span class="sub">focolare di casa</span>
+      </div>
+      <div class="who" id="who" aria-live="polite">
+        <div class="name">…</div>
+        <div class="meta">connessione</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="grid" id="grid" aria-label="Moduli"></section>
+      <div id="state-slot"></div>
+
+      <section class="integ-wrap" id="integ-wrap" hidden>
+        <div class="integ-title">Integrazioni</div>
+        <div class="integ" id="integ"></div>
+      </section>
+    </main>
+
+    <footer class="feet">
+      <span id="updated">—</span>
+      <span id="ver"></span>
+    </footer>
+  </div>
+
+<script>
+const SEV = new Set(["info", "warning", "danger"]);
+const $ = (sel) => document.querySelector(sel);
+
+function el(tag, cls, txt) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (txt != null) n.textContent = txt;
+  return n;
+}
+
+async function getJSON(path) {
+  const res = await fetch(path, { headers: { "Accept": "application/json" } });
+  if (!res.ok) {
+    const e = new Error("HTTP " + res.status);
+    e.status = res.status;
+    throw e;
+  }
+  return res.json();
+}
+
+function renderWho(me) {
+  const box = $("#who");
+  box.innerHTML = "";
+  const name = el("div", "name", me.display_name || "Ospite");
+  const badge = el("span", "badge " + (me.kind === "agent" ? "agent" : ""),
+    me.kind === "agent" ? "agent" : "tu");
+  name.appendChild(badge);
+  const meta = el("div", "meta", "casa #" + me.household_id);
+  box.append(name, meta);
+}
+
+function renderCard(card) {
+  const c = el("div", "card" + (card.icon === "⚠️" ? " err" : ""));
+
+  const eye = el("div", "eyebrow");
+  eye.append(el("span", "ico", card.icon || "•"), el("span", null, (card.name || card.key)));
+  c.appendChild(eye);
+
+  c.appendChild(el("div", "headline", card.headline || ""));
+
+  if (Array.isArray(card.stats) && card.stats.length) {
+    const stats = el("div", "stats");
+    for (const s of card.stats) {
+      const chip = el("div", "chip");
+      chip.append(el("span", "v", String(s.value)), el("span", "l", s.label || ""));
+      stats.appendChild(chip);
+    }
+    c.appendChild(stats);
+  }
+
+  if (Array.isArray(card.items) && card.items.length) {
+    const ul = el("ul", "items");
+    for (const it of card.items) {
+      const li = el("li");
+      const sev = SEV.has(it.severity) ? it.severity : "normal";
+      li.appendChild(el("span", "sev " + sev));
+      const body = el("div", "it-body");
+      body.appendChild(el("div", "it-title", it.title || ""));
+      if (it.subtitle) body.appendChild(el("div", "it-sub", it.subtitle));
+      li.appendChild(body);
+      if (it.when) li.appendChild(el("div", "it-when", it.when));
+      ul.appendChild(li);
+    }
+    c.appendChild(ul);
+  } else if (!(card.stats && card.stats.length) && card.icon !== "⚠️") {
+    c.appendChild(el("div", "empty", "Niente da mostrare — ancora."));
+  }
+
+  return c;
+}
+
+function renderIntegrations(list) {
+  const wrap = $("#integ-wrap");
+  const box = $("#integ");
+  box.innerHTML = "";
+  if (!Array.isArray(list) || !list.length) { wrap.hidden = true; return; }
+  for (const i of list) {
+    const on = !!i.configured;
+    const pill = el("div", "pill" + (on ? " on" : ""));
+    pill.append(
+      el("span", "pdot"),
+      el("span", null, i.name || i.key),
+      el("span", "pstate", on ? "connesso" : "da configurare")
+    );
+    box.appendChild(pill);
+  }
+  wrap.hidden = false;
+}
+
+function showNotice(html) {
+  $("#state-slot").innerHTML = "";
+  const n = el("div", "notice");
+  n.innerHTML = html;
+  $("#state-slot").appendChild(n);
+}
+
+function stamp() {
+  const t = new Date();
+  $("#updated").textContent = "aggiornato " + t.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function refresh() {
+  try {
+    const me = await getJSON("/api/me");
+    renderWho(me);
+  } catch (err) {
+    if (err.status === 401) {
+      $("#who").innerHTML = '<div class="name">Bloccato</div><div class="meta">serve un token</div>';
+      showNotice(
+        "Questa istanza gira in modalità <b>strict</b>: l'API accetta solo un token agente via header " +
+        "<code>Authorization: Bearer …</code>. Apri la dashboard dietro Authentik (modalità <code>proxy</code>) " +
+        "oppure passa a <code>HESTIA_AUTH_MODE=dev</code> in locale."
+      );
+      return;
+    }
+    throw err;
+  }
+
+  $("#state-slot").innerHTML = "";
+
+  const [cards, integ, health] = await Promise.allSettled([
+    getJSON("/api/dashboard"),
+    getJSON("/api/integrations"),
+    getJSON("/api/health"),
+  ]);
+
+  const grid = $("#grid");
+  grid.innerHTML = "";
+  if (cards.status === "fulfilled" && cards.value.length) {
+    cards.value.forEach((card, i) => {
+      const node = renderCard(card);
+      node.style.animationDelay = (i * 55) + "ms";
+      grid.appendChild(node);
+    });
+  } else if (cards.status === "fulfilled") {
+    showNotice("Nessun modulo attivo. Abilitane qualcuno con <code>HESTIA_ENABLED_MODULES=dogs,subscriptions</code> e riavvia.");
+  } else {
+    showNotice("Non riesco a leggere la dashboard. Controlla che il backend sia in esecuzione.");
+  }
+
+  if (integ.status === "fulfilled") renderIntegrations(integ.value);
+  if (health.status === "fulfilled") $("#ver").textContent = "hestia v" + (health.value.version || "");
+
+  stamp();
+}
+
+refresh().catch((err) => {
+  showNotice("Errore di connessione al backend: " + err.message + ". Verifica che il server sia attivo.");
+});
+setInterval(() => refresh().catch(() => {}), 60000);
+</script>
+</body>
+</html>

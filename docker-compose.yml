@@ -1,0 +1,40 @@
+# Hestia — API + MCP.
+#
+# In production these sit behind the existing homelab edge:
+#   * humans  -> Cloudflare Tunnel -> Authentik -> hestia-api (HESTIA_AUTH_MODE=proxy)
+#   * Hermes  -> Cloudflare Tunnel -> hestia-mcp (bearer token from `seed --token`)
+# The tunnel + Authentik are NOT defined here; wire them as you do for your other
+# services. Locally this just exposes both ports.
+
+services:
+  hestia-api:
+    build: .
+    environment:
+      HESTIA_ENABLED_MODULES: "dogs,subscriptions"
+      HESTIA_AUTH_MODE: "${HESTIA_AUTH_MODE:-dev}"
+      HESTIA_AGENT_TOKEN: "${HESTIA_AGENT_TOKEN:-}"
+      HESTIA_DATABASE_URL: "sqlite:////data/hestia.db"
+    volumes:
+      - hestia-data:/data
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  hestia-mcp:
+    build: .
+    command: ["python", "-m", "app.mcp.server"]
+    environment:
+      HESTIA_ENABLED_MODULES: "dogs,subscriptions"
+      HESTIA_MCP_TRANSPORT: "streamable-http"
+      HESTIA_MCP_HOST: "0.0.0.0"
+      HESTIA_MCP_PORT: "8765"
+      HESTIA_AGENT_TOKEN: "${HESTIA_AGENT_TOKEN:-}"
+      HESTIA_DATABASE_URL: "sqlite:////data/hestia.db"
+    volumes:
+      - hestia-data:/data   # same db file as the API
+    ports:
+      - "8765:8765"
+    restart: unless-stopped
+
+volumes:
+  hestia-data:

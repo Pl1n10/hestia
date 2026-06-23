@@ -1,0 +1,28 @@
+# Cloudflare Tunnel ingress for Hestia — SNIPPET TO MERGE.
+#
+# Do NOT replace your existing tunnel config. Add these two hostnames to the
+# `ingress:` list of the SAME tunnel that already serves devbox-bridge
+# (mcpdev.robertonovara.me). Keep devbox-bridge's rule and the final
+# catch-all `- service: http_status:404` exactly where they are.
+#
+# Typical config path on the devbox: /etc/cloudflared/config.yml
+# After editing:  sudo systemctl restart cloudflared
+# Also create the two DNS routes once (CNAME -> tunnel):
+#   cloudflared tunnel route dns <TUNNEL_NAME> hestia.robertonovara.me
+#   cloudflared tunnel route dns <TUNNEL_NAME> hestia-mcp.robertonovara.me
+
+ingress:
+  # ... your existing rules (including mcpdev.robertonovara.me) stay above ...
+
+  # Hestia dashboard + API. Put Cloudflare Access / Authentik in front of this
+  # hostname (it serves the human UI; auth_mode=proxy trusts the injected headers).
+  - hostname: hestia.robertonovara.me
+    service: http://127.0.0.1:8000
+
+  # Hestia MCP (agent surface). Gated by a bearer token at the app layer; the
+  # claude.ai connector sends Authorization: Bearer <token>. The MCP path is /mcp.
+  - hostname: hestia-mcp.robertonovara.me
+    service: http://127.0.0.1:8766
+
+  # ... your existing catch-all MUST remain the LAST entry:
+  # - service: http_status:404
