@@ -7,7 +7,7 @@ Where this is, and what the next session should pick up.
 A working modular skeleton: core + tenancy + auth + module registry + two
 reference modules (`dogs`, `subscriptions`) + the `feature_requests` meta module
 (Hermes files requests, Claude Code builds them — DECISIONS D-011) + an MCP
-server that reflects the registry + a single-file dashboard. 88 tests green. See
+server that reflects the registry + a single-file dashboard. 92 tests green. See
 `docs/STATE.md` for the full built/stubbed breakdown.
 
 **Claude Code intake:** read the open feature queue before planning work —
@@ -70,3 +70,14 @@ before proposing anything.
 - Test routing with `TestClient`, not `app.routes` (FAILURES F-004).
 - `api_tokens.household_id` is a real FK — the household row must exist before you
   insert a token (surfaced in tests).
+- A summary card's `items` must show the same set its stats count — don't filter
+  the list to a window the stat ignores, or real rows go invisible (FAILURES
+  F-007).
+- A new `service.py` write an agent could need goes on **REST and MCP** in the
+  same change — add-only surfaces breed duplicates (FAILURES F-008).
+- "Hermes wrote it but it's not there" → first suspect **two different DB files**,
+  not the code: run with the absolute `HESTIA_DATABASE_URL` loaded (FAILURES
+  F-009).
+- The live module REST path has the key twice
+  (`/api/modules/subscriptions/subscriptions/{id}`) — DECISIONS "OPEN — doubled
+  module route segment".

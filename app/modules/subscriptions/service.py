@@ -132,6 +132,12 @@ def summary(db: Session, household_id: int) -> ModuleSummary:
     else:
         headline = f"€{monthly}/mese · nessun rinnovo nei prossimi 30g"
 
+    # Card preview lists *every* active subscription, soonest renewal first and
+    # undated ones last, so a far-future plan (e.g. a yearly Amazon Prime) still
+    # shows up instead of being hidden behind the 30-day `upcoming` window.
+    ordered = sorted(
+        active, key=lambda s: (s.next_renewal is None, s.next_renewal or date.max)
+    )
     items = [
         SummaryItem(
             title=f"{s.name} · €{s.amount}",
@@ -139,7 +145,7 @@ def summary(db: Session, household_id: int) -> ModuleSummary:
             when=humanize_until(s.next_renewal) if s.next_renewal else None,
             severity=_severity_for(s.next_renewal) if s.next_renewal else "normal",
         )
-        for s in soon
+        for s in ordered
     ]
 
     return ModuleSummary(

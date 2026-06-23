@@ -153,6 +153,13 @@ authenticated request reaches `/api/me` and shows your user.
 
 ## Operations
 
+> **Any manual Hestia command must run with the env loaded** (absolute
+> `HESTIA_DATABASE_URL`). Run from `/opt/hestia` with
+> `env $(sudo grep -v '^#' /etc/hestia/hestia.env | xargs)` — as the seed command
+> below does. Without it the default DB path is *relative*, so a stray empty
+> `hestia.db` gets created in the CWD and your command touches a different file
+> than the services. (FAILURES F-009.)
+
 ```bash
 # logs
 journalctl -u hestia-api -f

@@ -13,7 +13,9 @@ def test_enabled_modules_parses_csv_from_env(monkeypatch):
 
 def test_enabled_modules_empty_when_unset(monkeypatch):
     monkeypatch.delenv("HESTIA_ENABLED_MODULES", raising=False)
-    s = Settings()
+    # _env_file=None so a developer's local .env (gitignored, devbox-only) can't
+    # leak a value in and make this default-behaviour check spuriously fail.
+    s = Settings(_env_file=None)
     assert s.enabled_modules == []
 
 

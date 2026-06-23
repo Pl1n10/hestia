@@ -114,3 +114,69 @@ its arguments.
 `wrapper.__signature__ = inspect.signature(handler)`. Verified: the wrapped
 `subscriptions_add` still exposes `name` / `amount` / `cycle` with the correct
 `required` set. See `app/mcp/audit.py` and `tests/test_mcp_hardening.py`.
+
+---
+
+## F-007 — A summary card whose item list disagrees with its own stat count
+
+**Tried.** Building the `subscriptions` card's `items` preview from
+`upcoming(days=30)` — only the subscriptions renewing in the next 30 days — while
+the card's `Attive` stat counted **all** active subscriptions.
+
+**Why it failed.** A real, active subscription with a far-future renewal (a yearly
+Amazon Prime renewing in 6 months) or no `next_renewal` at all was **counted in
+the stats but absent from the list**. To the user it looked like the agent had
+*failed to add it* — they re-ran `subscriptions_add` repeatedly, creating
+duplicates (see F-008). The card silently contradicted itself: "5 active" over a
+list of 3. This wasted a real debugging round-trip; Hermes had been writing
+correctly all along.
+
+**Do instead.** A card's item list must be a faithful view of the same set its
+headline stat counts. `summary()` lists **every active** subscription (soonest
+renewal first, undated last); the 30-day `upcoming` window is used **only** for
+the headline ("prossimo rinnovo…"), never to filter what the card shows. Guarded
+by `test_summary_lists_every_active_sub_not_just_upcoming`. General rule in
+ANTIPATTERNS ("a card whose items and stats disagree").
+
+---
+
+## F-008 — A write capability in `service.py` + REST but not on the MCP surface
+
+**Tried.** `subscriptions` shipped `update`/`delete` in the service layer **and**
+as REST `PATCH`/`DELETE`, but its `mcp.py` exposed only `subscriptions_add`
+(plus reads). The agent literally had no way to *edit* a subscription.
+
+**Why it failed.** When Hermes needed to correct a subscription (fix a renewal
+date), the only write tool it had was "add" — so it added a second row. Result:
+duplicate "Amazon Prime" entries. The capability existed everywhere a *human*
+could reach it and nowhere the *agent* could, which is exactly the divergence
+D-002 exists to prevent — just in the surface-coverage direction rather than the
+logic direction.
+
+**Do instead.** When `service.py` gains a write that an agent could plausibly
+need, expose it on **every** surface that needs it in the same change — REST
+*and* MCP. Don't leave the agent with a partial verb set (add-only) that forces
+it into duplicates. Added `subscriptions_update` + `subscriptions_delete` MCP
+tools (the service already had them). General rule in ANTIPATTERNS ("surface
+capability drift").
+
+---
+
+## F-009 — A stray relative-path SQLite DB when the env isn't loaded
+
+**Tried.** Running a Hestia process (a `seed`, a `python -c`, an `hestia-mcp`
+invocation) from a directory **without** the project `.env` / `HESTIA_DATABASE_URL`
+loaded.
+
+**Why it failed.** With no `HESTIA_DATABASE_URL`, the default is a **relative**
+SQLite path, so SQLite happily creates a fresh empty `hestia.db` in whatever the
+CWD happens to be (a stray `/home/hypn0/hestia.db` appeared this way). The API and
+the agent then read/write **different files** and silently diverge — writes "land"
+but never show up. We found one stale empty copy and removed it.
+
+**Do instead.** Always run Hestia commands from the repo root **with the env
+loaded**, or with `HESTIA_DATABASE_URL` set to the **absolute** path (the `.env`
+does this, and D-012 already mandates absolute paths in the Hermes MCP `env` for
+the same reason). In the systemd deploy the `EnvironmentFile` guarantees it; the
+trap is manual/co-located runs. If subscriptions "added by Hermes" don't appear,
+**check you're not looking at two different DB files** before suspecting the code.

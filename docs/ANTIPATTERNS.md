@@ -8,6 +8,20 @@ a filter, or a write rule that the other surfaces don't share, the app and the
 agent can diverge. All logic goes in `service.py`; surfaces only validate,
 delegate, and serialize. (DECISIONS D-002.)
 
+**Surface capability drift.** A `service.py` function reachable from one surface
+but not the others is the same divergence as logic-in-a-surface, seen from the
+coverage side. `subscriptions` once had `update`/`delete` in the service + REST
+but only `add` on MCP, so the agent could only ever *add* — and made duplicates.
+When you add a write a surface's user could need, expose it on every surface that
+needs it in the same change. (FAILURES F-008.)
+
+**A summary card whose items and stats disagree.** If the headline stat says "5
+active" the item list must be a view of those same 5, not a different filtered
+subset. Filtering the `items` to a window (e.g. renewals in 30 days) while the
+stat counts everything makes real entities invisible and looks like a *write*
+bug. Use such windows for the headline only, never to silently drop rows the card
+claims to summarise. (FAILURES F-007.)
+
 **A module reaching into another module's tables.** Modules are independent
 verticals. Cross-module reads go through the other module's `service.py`, never by
 importing its models and querying them. Module `household_id` is a scoping column,

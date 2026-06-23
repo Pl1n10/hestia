@@ -15,7 +15,10 @@ shape changes.
 - **Module `dogs`** (reference shape A — append-mostly log): models, schemas,
   service (+ `summary`), REST router, 3 MCP tools.
 - **Module `subscriptions`** (reference shape B — managed recurring + money):
-  models, schemas, service with Decimal cost rollup, REST router, 4 MCP tools.
+  models, schemas, service with Decimal cost rollup, REST router (full CRUD),
+  6 MCP tools (`list` / `add` / `update` / `delete` / `monthly_cost` /
+  `upcoming`). The summary card lists **every active** subscription, soonest
+  renewal first (the 30-day window is headline-only — FAILURES F-007).
 - **Module `feature_requests`** (managed entity + lifecycle — the *meta* module):
   how Hermes asks for the dashboard to grow. Status machine
   (`new → in_progress → done | rejected`), priority, `requested_by`,
@@ -40,9 +43,9 @@ shape changes.
   module cards by severity, and integration status.
 - **Scripts**: `seed.py` (idempotent; `--token` mints a one-time agent token),
   `new_module.py` (clones `_template`, patches `AVAILABLE`).
-- **Tests**: 88 passing (settings/F-003, registry, auth, dashboard + resilience,
-  dogs, subscriptions/Decimal, feature_requests/lifecycle, integrations/protocol,
-  MCP, scaffolder).
+- **Tests**: 92 passing (settings/F-003, registry, auth, dashboard + resilience,
+  dogs, subscriptions/Decimal + card-coverage + update/delete via MCP,
+  feature_requests/lifecycle, integrations/protocol, MCP, scaffolder).
 
 ## Stubbed — protocol defined, sync raises `NotImplementedError`
 
@@ -72,6 +75,10 @@ shape changes.
 - Decide the sgambamento app question (DECISIONS "OPEN").
 - Tighten CORS in production (currently `*`; Authentik sits in front).
 - The cost endpoint returns floats at the boundary; that's intentional (D-007).
+- **Doubled REST path segment**: module routers mount at `/api/modules/<key>`
+  *and* declare routes as `/<key>/...`, so the live path is
+  `/api/modules/subscriptions/subscriptions/{id}`. Cosmetic but confusing; see
+  DECISIONS "OPEN — doubled module route segment". Not yet fixed.
 
 ## Integration mode
 

@@ -269,6 +269,24 @@ Not started.
 
 ---
 
+## OPEN — Doubled module route segment
+
+Module routers are mounted with `prefix=f"/api/modules/{module.key}"`
+(`app/main.py`) **and** each router declares its own routes as `/{key}/...`
+(e.g. `subscriptions/router.py` has `@router.get("/subscriptions")`). The two
+compose into `/api/modules/subscriptions/subscriptions/{id}` — the key appears
+twice. It works and is consistent across every module, but it's a wart: it
+confuses anyone hand-calling the API (it bit us during the Amazon dedup — a
+`DELETE` on the single-segment path 404'd).
+
+Two fixes, both mechanical: drop the `/{key}` from the routes (rely on the mount
+prefix), or drop the key from the mount prefix. The first is cleaner. Deferred
+because it touches every module's router + their tests at once; do it as one
+focused pass, not piecemeal. Until then, remember the path has the segment
+twice.
+
+---
+
 ## OPEN — Absorb vs. integrate the existing sgambamento app
 
 There is already a live FastAPI + SQLite app for Milka's sgambamenti at

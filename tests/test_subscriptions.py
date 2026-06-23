@@ -9,8 +9,6 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import Decimal
 
-import pytest
-
 from app.modules.subscriptions import service
 
 
@@ -78,6 +76,55 @@ def test_summary_headline_and_stats(db):
     assert "/mese" in summary.headline
     labels = {s.label for s in summary.stats}
     assert {"Attive", "€/mese", "€/anno"} <= labels
+
+
+def test_summary_lists_every_active_sub_not_just_upcoming(db):
+    """Far-future and undated subs must still appear in the card preview."""
+    today = date.today()
+    _add(db, name="Presto", amount=5, next_renewal=today + timedelta(days=3))
+    _add(db, name="Lontana", amount=5, next_renewal=today + timedelta(days=300))  # yearly Amazon-like
+    _add(db, name="Senza data", amount=5, next_renewal=None)
+    summary = service.summary(db, 1)
+    titles = [i.title for i in summary.items]
+    assert any("Presto" in t for t in titles)
+    assert any("Lontana" in t for t in titles)   # the bug: this was hidden before
+    assert any("Senza data" in t for t in titles)
+    # soonest first, undated last
+    assert titles[0].startswith("Presto")
+    assert titles[-1].startswith("Senza data")
+
+
+# --- MCP agent surface --------------------------------------------------- #
+def test_mcp_update_edits_in_place_no_duplicate(db):
+    """Hermes editing a sub must change the row, not create a second one."""
+    from app.modules.subscriptions import mcp
+
+    sub = _add(db, name="Amazon Prime", amount=49.9, cycle="yearly")
+    db.commit()
+
+    res = mcp.subscriptions_update(sub.id, amount=59.9, next_renewal="2026-12-15")
+    assert res["id"] == sub.id
+    assert res["amount"] == 59.9
+    assert res["next_renewal"] == "2026-12-15"
+    # still exactly one row
+    assert len(service.list_subscriptions(db, 1)) == 1
+
+
+def test_mcp_update_unknown_id_returns_error(db):
+    from app.modules.subscriptions import mcp
+
+    assert "error" in mcp.subscriptions_update(999, amount=1.0)
+
+
+def test_mcp_delete_removes_duplicate(db):
+    from app.modules.subscriptions import mcp
+
+    sub = _add(db, name="Doppione", amount=5)
+    db.commit()
+    assert mcp.subscriptions_delete(sub.id) == {"deleted": True, "id": sub.id}
+    db.expunge_all()  # tool deleted in its own session; drop our identity-map cache
+    assert service.get_subscription(db, 1, sub.id) is None
+    assert "error" in mcp.subscriptions_delete(sub.id)  # already gone
 
 
 # --- REST ---------------------------------------------------------------- #
