@@ -218,6 +218,57 @@ written, so the lifecycle can't be corrupted from the agent surface.
 
 ---
 
+## D-012 — Co-located with Hermes: stdio MCP, not HTTP
+
+**Decision.** When Hestia runs on the **same host** as Hermes (one box, one Unix
+user), Hermes reaches Hestia's tools over a local **stdio** MCP pipe — it spawns
+the `hestia-mcp` console script (`python -m app.mcp.server`) as a subprocess —
+rather than over the HTTP transport. The HTTP transport + bearer auth +
+Cloudflare Tunnel (D-008/D-009) is reserved for the **remote** case (a connector
+on claude.ai) and for a **hardened multi-user** deploy where the DB is owned by a
+separate service account.
+
+**Why.** Co-located and single-user, stdio is strictly less moving-parts: no
+network listener, no tunnel, no connector registration, no bearer token to mint
+or rotate — yet it keeps the tool schemas (Hermes auto-discovers them) and the
+audit log (D-010 still fires; principal defaults to `local`). The HTTP machinery
+exists to cross a trust/host boundary; on one box there is no boundary to cross.
+Hermes already speaks MCP natively (an `mcp_servers` entry in its config), so
+wiring Hestia is one entry pointing at the console script, with **absolute paths
+in `env`** so the subprocess and the API share one SQLite file regardless of CWD.
+
+**Consequences.** In the co-located deploy only the API runs as a long-lived
+service; the MCP server is an on-demand subprocess Hermes owns, so
+`hestia-mcp.service` (HTTP) stays disabled. Moving to a hardened separate-user
+deploy (DB under an account Hermes can't write) flips the integration to
+HTTP-on-localhost: same `resolve_principal`, a port instead of a pipe. The audit
+log path **must** be absolute — the subprocess inherits the parent's CWD.
+
+---
+
+## PLANNED — Autonomous build loop (feature_requests → Claude Code)
+
+Today `feature_requests` is an **inbox**: Hermes files requests, but nothing acts
+on them automatically — a human opens Claude Code in the repo and works the queue
+(D-011; HANDOFF intake note). Automating the second half (a watcher that wakes
+**headless** Claude Code on a new `new`-status request) is **deferred, not
+rejected**. When built, the guardrails are fixed in advance:
+
+- **Trigger lives outside Hestia**: a timer/webhook polls
+  `…/requests?open_only=true` for status `new`; Hestia stays a passive store.
+- **Isolation**: each run in a dedicated git worktree/branch, restricted tool
+  permissions.
+- **Review gate**: the agent **opens a PR, never pushes `main`**; tests must pass;
+  a human merges. No auto-merge.
+- **Hermes never writes code** — that stays Claude Code / devbox-bridge's job
+  (D-008). Hermes only files the request and may flip status.
+- On pickup → status `in_progress`; on merge → `done`, PR link in `resolution`.
+
+Fits the existing infra (Gitea + Woodpecker, or a systemd-timer on the devbox).
+Not started.
+
+---
+
 ## OPEN — Absorb vs. integrate the existing sgambamento app
 
 There is already a live FastAPI + SQLite app for Milka's sgambamenti at

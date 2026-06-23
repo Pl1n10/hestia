@@ -39,12 +39,21 @@ before proposing anything.
 3. **Add the next module** with `python -m scripts.new_module vehicles --name
    Veicoli --icon 🚗`. Vehicles/utilities follow the `subscriptions` shape
    (recurring + due dates); hardware/licenses too.
-4. **Point Hermes at the MCP server.** Run `HESTIA_MCP_TRANSPORT=streamable-http
-   python -m app.mcp.server` behind a Cloudflare Tunnel (e.g.
-   `hestia-mcp.robertonovara.me`), mint a token with `seed --token`, register it
-   in Hermes.
+4. **Hermes integration.** *Co-located* (same host as Hermes): register Hestia as
+   a **stdio** MCP server in Hermes — it spawns the `hestia-mcp` console script,
+   with absolute `env` paths so it shares the API's SQLite file (DECISIONS D-012);
+   no token/tunnel needed. *Remote*: `HESTIA_MCP_TRANSPORT=streamable-http` behind a
+   Cloudflare Tunnel + `seed --token` (D-008/D-009).
 5. **Production posture.** Put the API behind Authentik (`HESTIA_AUTH_MODE=proxy`),
    tighten CORS off `*`, and back up the SQLite file with the existing homelab job.
+
+## Deferred (agreed, not now)
+
+- **Autonomous build loop**: a watcher that wakes headless Claude Code on a new
+  `feature_requests` entry and has it open a PR. Design + guardrails are pinned in
+  DECISIONS "PLANNED" (isolated worktree, PR gate, no push to `main`, Hermes never
+  writes code). Build when we choose to; until then the loop is human-triggered
+  (see the intake note above).
 
 ## Conventions to keep
 

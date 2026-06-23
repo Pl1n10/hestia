@@ -64,7 +64,22 @@ shape changes.
 
 ## Known TODO / loose ends
 
+- **Autonomous build loop** for `feature_requests`: today it's an inbox (Hermes
+  files, a human runs Claude Code to build). Automating it — a watcher that wakes
+  headless Claude Code on a new request, PR-gated — is deferred. Guardrails are
+  already specified in DECISIONS "PLANNED".
 - Wire at least one real integration (Calendar is the highest-value first one).
 - Decide the sgambamento app question (DECISIONS "OPEN").
 - Tighten CORS in production (currently `*`; Authentik sits in front).
 - The cost endpoint returns floats at the boundary; that's intentional (D-007).
+
+## Integration mode
+
+- **Co-located with Hermes (same host, one user):** Hermes spawns the Hestia
+  **stdio** MCP server as a subprocess (DECISIONS D-012). Only the API runs as a
+  long-lived service; `hestia-mcp.service` (HTTP) stays off.
+- **Remote / hardened multi-user:** the HTTP MCP transport behind a Cloudflare
+  Tunnel (D-008/D-009) — the `deploy/` path. Use this only when crossing a host
+  or trust boundary.
+- The human web UI is **read-only** (only `GET`s). All writes go through the
+  service layer via the REST API or Hermes's MCP tools, never the browser.
