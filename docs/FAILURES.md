@@ -180,3 +180,30 @@ does this, and D-012 already mandates absolute paths in the Hermes MCP `env` for
 the same reason). In the systemd deploy the `EnvironmentFile` guarantees it; the
 trap is manual/co-located runs. If subscriptions "added by Hermes" don't appear,
 **check you're not looking at two different DB files** before suspecting the code.
+
+---
+
+## F-010 — Shipping a tool but Hermes still can't see it (stale stdio MCP subprocess)
+
+**Tried.** Adding/renaming an MCP tool in `app/` (here: `subscriptions_delete`,
+then `hestia_help`), confirming a fresh `hestia-mcp` exposes it, and assuming
+Hermes now has it.
+
+**Why it failed — twice.** Hermes reaches Hestia over a **stdio** MCP pipe
+(D-012): the `hermes-gateway` service spawns `hestia-mcp` as a child subprocess
+**once, at gateway startup**, and that subprocess holds the tool list for its
+whole lifetime. The editable install means the *code on disk* is current, but the
+**running subprocess is not** — it had been up ~10h, predating the change. So
+Hermes kept filing feature requests for `subscriptions_remove` (#3, then #5) for a
+capability (`subscriptions_delete`) that already existed: it literally couldn't
+see the tool. The on-disk code, the tests, and a freshly-spawned server were all
+correct; only the long-lived child was stale.
+
+**Do instead.** After changing Hestia's MCP surface (any new/renamed tool),
+**restart the process that owns the subprocess** so it respawns with the new
+code: `systemctl --user restart hermes-gateway` (restarting the *API* service is
+**not** enough — that's a different process; the agent's pipe is the gateway's
+child). To diagnose before suspecting code: `ps -o etimes,lstart,cmd -C python |
+grep hestia-mcp` — if its start time predates your edit, it's stale. The
+`hestia_help` tool can't help here either until the very subprocess that would
+serve it is restarted.
