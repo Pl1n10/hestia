@@ -17,6 +17,24 @@ def test_collect_tools_aggregates_every_enabled_module():
     assert {"subscriptions_add", "subscriptions_monthly_cost"} <= names
 
 
+def test_help_tool_is_present_and_leads():
+    tools = collect_tools()
+    assert tools[0].name == "hestia_help"  # the agent's entry point comes first
+
+
+def test_help_lists_every_enabled_area_and_rules():
+    """hestia_help reflects the live registry, so it can't drift from the tools."""
+    from app.mcp.help import hestia_help
+
+    out = hestia_help()
+    assert out["guidance"]  # house rules present
+    by_module = {a["module"]: a for a in out["areas"]}
+    assert {"dogs", "subscriptions", "feature_requests"} <= set(by_module)
+    sub_tools = {t["name"] for t in by_module["subscriptions"]["tools"]}
+    # the very capabilities Hermes thought were missing are advertised here
+    assert {"subscriptions_update", "subscriptions_delete"} <= sub_tools
+
+
 def test_tools_have_descriptions_and_callables():
     for tool in collect_tools():
         assert tool.description

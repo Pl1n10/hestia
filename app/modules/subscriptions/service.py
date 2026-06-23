@@ -31,6 +31,34 @@ def _dec(value: float | Decimal | None) -> Decimal:
     return Decimal(str(value))
 
 
+class DuplicateSubscriptionError(ValueError):
+    """An active subscription with this name already exists for the household.
+
+    Carries the existing row so a surface can point the human/agent at it: the
+    right move is to *update* (or delete) that one, not add a second. This is the
+    guard that closes the duplicate-Netflix loop documented in FAILURES F-007/F-008.
+    """
+
+    def __init__(self, existing: Subscription) -> None:
+        self.existing = existing
+        super().__init__(
+            f"A subscription named {existing.name!r} already exists (id={existing.id})."
+        )
+
+
+def find_active_by_name(
+    db: Session, household_id: int, name: str
+) -> Subscription | None:
+    """Return the active subscription matching ``name`` (case/space-insensitive), if any."""
+    target = (name or "").strip().casefold()
+    if not target:
+        return None
+    for sub in list_subscriptions(db, household_id, active_only=True):
+        if sub.name.strip().casefold() == target:
+            return sub
+    return None
+
+
 # --- CRUD ---------------------------------------------------------------- #
 def list_subscriptions(
     db: Session, household_id: int, *, active_only: bool = False
@@ -49,7 +77,13 @@ def get_subscription(db: Session, household_id: int, sub_id: int) -> Subscriptio
     return sub
 
 
-def create_subscription(db: Session, household_id: int, **fields) -> Subscription:
+def create_subscription(
+    db: Session, household_id: int, *, allow_duplicate: bool = False, **fields
+) -> Subscription:
+    if not allow_duplicate:
+        existing = find_active_by_name(db, household_id, fields.get("name", ""))
+        if existing is not None:
+            raise DuplicateSubscriptionError(existing)
     fields["amount"] = _dec(fields.get("amount"))
     sub = Subscription(household_id=household_id, **fields)
     db.add(sub)

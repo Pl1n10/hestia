@@ -36,8 +36,15 @@ def subscriptions_add(
     next_renewal: str | None = None,
     category: str | None = None,
     notes: str | None = None,
+    allow_duplicate: bool = False,
 ) -> dict:
     """Add a subscription / recurring cost.
+
+    Refuses to create a second active subscription with the same name: if one
+    already exists you get ``{"error": "duplicate", ...}`` pointing at it — use
+    ``subscriptions_update`` to change it or ``subscriptions_delete`` to remove
+    it instead of adding a copy. Pass ``allow_duplicate=True`` only if two truly
+    separate entries are intended (e.g. two distinct accounts).
 
     Args:
         name: display name (e.g. "Netflix").
@@ -48,21 +55,36 @@ def subscriptions_add(
         next_renewal: optional ISO date (YYYY-MM-DD) of the next charge.
         category: optional tag (streaming, software, utenze...).
         notes: optional free text.
+        allow_duplicate: set True to bypass the same-name guard.
     """
     with SessionLocal() as db:
         renewal = dtparser.isoparse(next_renewal).date() if next_renewal else None
-        sub = service.create_subscription(
-            db,
-            _hh(),
-            name=name,
-            amount=amount,
-            cycle=cycle if cycle in ("weekly", "monthly", "quarterly", "yearly") else "monthly",
-            vendor=vendor,
-            currency=currency,
-            next_renewal=renewal,
-            category=category,
-            notes=notes,
-        )
+        try:
+            sub = service.create_subscription(
+                db,
+                _hh(),
+                allow_duplicate=allow_duplicate,
+                name=name,
+                amount=amount,
+                cycle=cycle if cycle in ("weekly", "monthly", "quarterly", "yearly") else "monthly",
+                vendor=vendor,
+                currency=currency,
+                next_renewal=renewal,
+                category=category,
+                notes=notes,
+            )
+        except service.DuplicateSubscriptionError as exc:
+            ex = exc.existing
+            return {
+                "error": "duplicate",
+                "message": f"'{ex.name}' already exists (id={ex.id}); not adding a second one.",
+                "existing": SubscriptionOut.model_validate(ex).model_dump(mode="json"),
+                "hint": (
+                    f"To change it call subscriptions_update(sub_id={ex.id}, ...); "
+                    f"to remove it call subscriptions_delete(sub_id={ex.id}). "
+                    "Pass allow_duplicate=True only if you really mean two entries."
+                ),
+            }
         return SubscriptionOut.model_validate(sub).model_dump(mode="json")
 
 

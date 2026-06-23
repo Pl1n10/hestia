@@ -19,6 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from app.mcp.audit import audit_wrap
+from app.mcp.help import build_help_tool
 from app.modules import load_enabled
 from app.modules.base import McpTool
 from app.settings import settings
@@ -29,7 +30,8 @@ if TYPE_CHECKING:
 
 
 def collect_tools() -> list[McpTool]:
-    tools: list[McpTool] = []
+    # hestia_help leads: it's the agent's entry point to discover the rest.
+    tools: list[McpTool] = [build_help_tool()]
     for module in load_enabled().values():
         tools.extend(module.mcp_tools)
     return tools

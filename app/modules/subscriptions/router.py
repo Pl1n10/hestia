@@ -33,12 +33,29 @@ def list_subscriptions(
 )
 def create_subscription(
     payload: SubscriptionIn,
+    allow_duplicate: bool = False,
     p: Principal = Depends(current_principal),
     db: Session = Depends(get_db),
 ):
     data = payload.model_dump()
     data["cycle"] = payload.normalised_cycle()
-    return service.create_subscription(db, p.household_id, **data)
+    try:
+        return service.create_subscription(
+            db, p.household_id, allow_duplicate=allow_duplicate, **data
+        )
+    except service.DuplicateSubscriptionError as exc:
+        # Don't silently create a second "Netflix"; point the caller at the
+        # existing row. Pass ?allow_duplicate=true to override deliberately.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error": "duplicate_subscription",
+                "message": str(exc),
+                "existing_id": exc.existing.id,
+                "hint": "Update it (PATCH .../subscriptions/{id}) or delete it, "
+                "or POST again with ?allow_duplicate=true.",
+            },
+        ) from exc
 
 
 @router.get("/subscriptions/cost", response_model=CostBreakdown)

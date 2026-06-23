@@ -43,10 +43,11 @@ app/
   integrations/        # capability protocols + stubs (Calendar, Mail, Shopping)
   mcp/server.py        # reflects the registry -> exposes every tool to agents
                        #   (HTTP transport: bearer auth + per-call audit log)
+  mcp/help.py          # hestia_help: the agent's self-description tool (see docs/AGENT.md)
   main.py              # app factory; mounts modules; /api/dashboard aggregator
   web/static/          # single-file dashboard shell
 scripts/               # seed.py, new_module.py
-tests/                 # 70 tests; TDD, fresh DB per test
+tests/                 # 99 tests; TDD, fresh DB per test
 deploy/                # systemd units, cloudflared snippet, install/uninstall
 docs/                  # DECISIONS / FAILURES / STATE / DEPLOY / VOCABULARY / ...
 ```

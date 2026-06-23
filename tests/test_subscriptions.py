@@ -116,6 +116,54 @@ def test_mcp_update_unknown_id_returns_error(db):
     assert "error" in mcp.subscriptions_update(999, amount=1.0)
 
 
+def test_create_refuses_active_duplicate_by_name(db):
+    """The guard that stops the duplicate-Netflix loop (FAILURES F-007/F-008)."""
+    import pytest
+
+    _add(db, name="Netflix", amount=12.99)
+    with pytest.raises(service.DuplicateSubscriptionError):
+        _add(db, name=" netflix ", amount=12.99)  # case/space-insensitive
+    assert len(service.list_subscriptions(db, 1)) == 1
+
+
+def test_create_allows_duplicate_when_explicit(db):
+    _add(db, name="Netflix", amount=12.99)
+    service.create_subscription(db, 1, allow_duplicate=True, name="Netflix", amount=9.99)
+    assert len(service.list_subscriptions(db, 1)) == 2
+
+
+def test_create_duplicate_check_ignores_inactive(db):
+    """A cancelled sub shouldn't block re-subscribing to the same service."""
+    _add(db, name="Disney+", amount=8.99, active=False)
+    sub = _add(db, name="Disney+", amount=8.99)  # no raise
+    assert sub.active is True
+
+
+def test_mcp_add_duplicate_points_at_existing_tools(db):
+    """Re-adding via the agent surface teaches it to update/delete, not duplicate."""
+    from app.modules.subscriptions import mcp
+
+    first = _add(db, name="Netflix", amount=12.99)
+    db.commit()
+    res = mcp.subscriptions_add(name="Netflix", amount=12.99)
+    assert res["error"] == "duplicate"
+    assert res["existing"]["id"] == first.id
+    assert "subscriptions_update" in res["hint"]
+    assert "subscriptions_delete" in res["hint"]
+    assert len(service.list_subscriptions(db, 1)) == 1
+
+
+def test_rest_add_duplicate_returns_409(client):
+    base = "/api/modules/subscriptions/subscriptions"
+    client.post(base, json={"name": "Netflix", "amount": 12.0})
+    dup = client.post(base, json={"name": "Netflix", "amount": 12.0})
+    assert dup.status_code == 409
+    assert dup.json()["detail"]["error"] == "duplicate_subscription"
+    # the override path still works
+    ok = client.post(base + "?allow_duplicate=true", json={"name": "Netflix", "amount": 9.0})
+    assert ok.status_code == 201
+
+
 def test_mcp_delete_removes_duplicate(db):
     from app.modules.subscriptions import mcp
 
