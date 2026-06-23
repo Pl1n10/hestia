@@ -5,9 +5,15 @@ Where this is, and what the next session should pick up.
 ## What you're inheriting
 
 A working modular skeleton: core + tenancy + auth + module registry + two
-reference modules (`dogs`, `subscriptions`) + an MCP server that reflects the
-registry + a single-file dashboard. 60 tests green. See `docs/STATE.md` for the
-full built/stubbed breakdown.
+reference modules (`dogs`, `subscriptions`) + the `feature_requests` meta module
+(Hermes files requests, Claude Code builds them — DECISIONS D-011) + an MCP
+server that reflects the registry + a single-file dashboard. 88 tests green. See
+`docs/STATE.md` for the full built/stubbed breakdown.
+
+**Claude Code intake:** read the open feature queue before planning work —
+`GET /api/modules/feature_requests/requests?open_only=true` (or the
+`feature_requests_list` MCP tool). Flip status to `in_progress` when you start
+and `done`/`rejected` (with a `resolution` note) when you finish.
 
 ## Start here
 

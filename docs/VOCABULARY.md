@@ -49,5 +49,10 @@ not on Google or Bring (so vendors are swappable — FAILURES F-002).
 **Auth mode** — `dev` (local, dev user) | `proxy` (trust Authentik headers) |
 `strict` (bearer tokens only). Set via `HESTIA_AUTH_MODE`.
 
+**Feature request** — a row in the `feature_requests` module: the agent's way of
+asking for the dashboard *itself* to grow. Hermes files one over MCP; Claude Code
+reads the open queue and builds it, moving it through `new → in_progress →
+done | rejected`. The dashboard's *meta* module (DECISIONS D-011).
+
 **sgambamento** — a dog outing / run-around (Milka's). The `dogs` activity type;
 also the name of the pre-existing standalone app this may absorb or integrate.

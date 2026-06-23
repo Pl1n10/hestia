@@ -38,6 +38,7 @@ app/
     __init__.py        # discovery: AVAILABLE + load_enabled()
     dogs/              # reference module A: append-mostly activity log
     subscriptions/     # reference module B: managed recurring entities + money
+    feature_requests/  # meta module: agent files requests, Claude Code builds them
     _template/         # copy-me blueprint (NOT loaded; used by new_module.py)
   integrations/        # capability protocols + stubs (Calendar, Mail, Shopping)
   mcp/server.py        # reflects the registry -> exposes every tool to agents

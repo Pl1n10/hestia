@@ -16,6 +16,12 @@ shape changes.
   service (+ `summary`), REST router, 3 MCP tools.
 - **Module `subscriptions`** (reference shape B — managed recurring + money):
   models, schemas, service with Decimal cost rollup, REST router, 4 MCP tools.
+- **Module `feature_requests`** (managed entity + lifecycle — the *meta* module):
+  how Hermes asks for the dashboard to grow. Status machine
+  (`new → in_progress → done | rejected`), priority, `requested_by`,
+  `resolution`; service, schemas, REST router (CRUD + PATCH), 3 MCP tools
+  (`add` / `list` / `set_status`), summary card. Enabled by default. See
+  DECISIONS D-011.
 - **Module `_template`**: copy-me blueprint (not loaded).
 - **MCP server**: reflects the registry, registers every tool on FastMCP,
   configurable transport. HTTP transports are gated by a pure-ASGI **bearer-auth
@@ -34,8 +40,9 @@ shape changes.
   module cards by severity, and integration status.
 - **Scripts**: `seed.py` (idempotent; `--token` mints a one-time agent token),
   `new_module.py` (clones `_template`, patches `AVAILABLE`).
-- **Tests**: 60 passing (settings/F-003, registry, auth, dashboard + resilience,
-  dogs, subscriptions/Decimal, integrations/protocol, MCP, scaffolder).
+- **Tests**: 88 passing (settings/F-003, registry, auth, dashboard + resilience,
+  dogs, subscriptions/Decimal, feature_requests/lifecycle, integrations/protocol,
+  MCP, scaffolder).
 
 ## Stubbed — protocol defined, sync raises `NotImplementedError`
 

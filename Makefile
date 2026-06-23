@@ -4,7 +4,7 @@ PY := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 
 # Modules enabled for local dev. Override: make run MODULES=dogs
-MODULES ?= dogs,subscriptions
+MODULES ?= dogs,subscriptions,feature_requests
 export HESTIA_ENABLED_MODULES = $(MODULES)
 
 .PHONY: help install seed run mcp test fmt clean

@@ -191,6 +191,33 @@ middleware sets per request.
 
 ---
 
+## D-011 — Feature requests are a module, not a side channel
+
+**Decision.** The way the agent asks for the dashboard *itself* to grow is a
+first-class module (`feature_requests`), built on the same contract as every
+other vertical: a `service.py`, a REST router, MCP tools, and a summary card.
+Hermes files a request with `feature_requests_add`; it lands in the same DB the
+humans see; Claude Code reads the open queue and flips the status
+(`new → in_progress → done | rejected`) as it builds. It ships in `AVAILABLE`
+(enabled by default) because every deployment wants this loop.
+
+**Why.** The request was "let Hermes ask for new features so Claude Code can
+build them." Modelling that as a bespoke endpoint or an external tracker would
+break the one architectural promise (D-002): the agent path and the human path
+would diverge, and the request queue would live outside the dashboard the
+requests are *about*. As a module it inherits household scoping, the audit log
+(D-010), agent auth (D-005/D-009), and a dashboard card — for free — and it
+doubles as the canonical worked example of the managed-entity-with-lifecycle
+shape (like `subscriptions`, minus the money).
+
+**Consequences.** The feature backlog is queryable over REST and MCP and visible
+on the home view. Claude Code's intake is `GET /api/modules/feature_requests/requests?open_only=true`
+(or the `feature_requests_list` tool). `resolution` carries the implementer's
+note / PR link / rejection reason. Unknown statuses are ignored rather than
+written, so the lifecycle can't be corrupted from the agent surface.
+
+---
+
 ## OPEN — Absorb vs. integrate the existing sgambamento app
 
 There is already a live FastAPI + SQLite app for Milka's sgambamenti at
