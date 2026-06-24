@@ -17,7 +17,7 @@ from app.modules.base import DashboardModule, get_registry
 from app.settings import settings
 
 # Modules shipped in-tree and available to enable.
-AVAILABLE: tuple[str, ...] = ("dogs", "subscriptions", "feature_requests")
+AVAILABLE: tuple[str, ...] = ("dogs", "subscriptions", "feature_requests", "vehicles")
 
 
 def enabled_keys() -> list[str]:
