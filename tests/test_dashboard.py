@@ -38,7 +38,7 @@ def test_dashboard_returns_one_card_per_module(client):
     r = client.get("/api/dashboard")
     assert r.status_code == 200
     cards = r.json()
-    assert {c["key"] for c in cards} == {"dogs", "subscriptions", "feature_requests"}
+    assert {c["key"] for c in cards} == {"dogs", "subscriptions", "feature_requests", "projects"}
     for c in cards:
         assert "headline" in c and "icon" in c
 
