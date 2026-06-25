@@ -16,7 +16,7 @@ import pytest
 _DB_FD, _DB_PATH = tempfile.mkstemp(prefix="hestia_test_", suffix=".db")
 os.close(_DB_FD)
 os.environ["HESTIA_DATABASE_URL"] = f"sqlite:///{_DB_PATH}"
-os.environ["HESTIA_ENABLED_MODULES"] = "dogs,subscriptions,feature_requests"
+os.environ["HESTIA_ENABLED_MODULES"] = "dogs,subscriptions,feature_requests,tiles"
 os.environ["HESTIA_AUTH_MODE"] = "dev"
 os.environ["HESTIA_AGENT_TOKEN"] = "test-master-token"
 os.environ["HESTIA_DEFAULT_HOUSEHOLD_ID"] = "1"

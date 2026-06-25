@@ -82,6 +82,7 @@ def seed(make_token: bool = False) -> None:
 
         _seed_dogs(db, hh.id)
         _seed_subscriptions(db, hh.id)
+        _seed_tiles(db, hh.id)
 
         if make_token:
             token = _mint_token(db, hh.id, "hermes-devbox")
@@ -138,6 +139,32 @@ def _seed_subscriptions(db, household_id: int) -> None:
     for s in samples:
         subs.create_subscription(db, household_id, **s)
     print(f"  subscriptions: {len(samples)} di esempio")
+
+
+def _seed_tiles(db, household_id: int) -> None:
+    if "tiles" not in load_enabled():
+        return
+    from app.modules.tiles import service as tiles
+
+    if tiles.list_tiles(db, household_id, active_only=False):
+        return
+    samples = [
+        dict(
+            title="Manutenzione Cucina",
+            body="Ultima manutenzione: 22 giugno 2026",
+            color="green",
+            next_check_at=date(2026, 9, 22),
+        ),
+        dict(
+            title="Stato Impianti",
+            body="Controllo impianto elettrico e idraulico.",
+            color="blue",
+            next_check_at=date.today() + timedelta(days=90),
+        ),
+    ]
+    for s in samples:
+        tiles.create_tile(db, household_id, **s)
+    print(f"  tiles: {len(samples)} riquadri di esempio")
 
 
 if __name__ == "__main__":
